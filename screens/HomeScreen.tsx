@@ -4,8 +4,10 @@ import * as React from 'react';
 
 import * as Permissions from 'expo-permissions'
 import * as tf from '@tensorflow/tfjs';
-import { fetch ,asyncStorageIO,bundleResourceIO} from '@tensorflow/tfjs-react-native'
+import { fetch ,asyncStorageIO,bundleResourceIO,decodeJpeg} from '@tensorflow/tfjs-react-native'
 import * as jpeg from 'jpeg-js'
+import * as FileSystem from 'expo-file-system'
+
 
 import {
   Image,
@@ -164,6 +166,11 @@ export default class HomeScreen extends React.Component {
 
         if (!response.cancelled) {
           const source = { uri: response.uri }
+
+          
+
+
+
           this.setState({ image: source })
           this._classifyImage()
         }
@@ -195,56 +202,51 @@ export default class HomeScreen extends React.Component {
 
   };
 
-
-  imageToTensor(rawImageData:any) {
-    const TO_UINT8ARRAY = true
-    const { width, height, data } = jpeg.decode(rawImageData, TO_UINT8ARRAY)
-    // Drop the alpha channel info for mobilenet
-    const buffer = new Uint8Array(width * height * 3)
-    let offset = 0 // offset into original data
-    for (let i = 0; i < buffer.length; i += 3) {
-      buffer[i] = data[offset]
-      buffer[i + 1] = data[offset + 1]
-      buffer[i + 2] = data[offset + 2]
-
-      offset += 4
-    }
-
-    return tf.tensor3d(buffer, [height, width, 3])
-  }
   _classifyImage = async () => {
     try {
-      console.log(`Classifying Image: Start `)
       this.setState({ predictions: [] })
-      const imageAssetPath = Image.resolveAssetSource(this.state.image)
-      const response = await fetch(imageAssetPath.uri, {}, { isBinary: true })
-      const rawImageData = await response.arrayBuffer()
-      const imageTensor = this.imageToTensor(rawImageData)
+      console.log(`Classifying Image: Start `)
+      
+
+      console.log(`Fetching Image: Start `)
+      const imgB64 = await FileSystem.readAsStringAsync(this.state.image.uri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+      const imgBuffer = tf.util.encodeString(imgB64, 'base64').buffer;
+      const raw = new Uint8Array(imgBuffer)  
+      const imageTensor = decodeJpeg(raw);
+      console.log(`Fetching Image: Done `)
+
+      // const imageAssetPath = Image.resolveAssetSource(this.state.image)
+      // const response = await fetch(imageAssetPath.uri, {}, { isBinary: true })
+      // const rawImageData = await response.arrayBuffer()
+      // const imageTensor = this.imageToTensor(rawImageData)
       // const predictions = await this.model.classify(imageTensor);
 
       const IMAGE_SIZE = 224;
 
       console.log("Preprocessing image: Start")
-      const preProcessedImage = tf.tidy(() => {
-        const b = tf.scalar(127.5);
+      const preProcessedImage = imageTensor;
+      // const preProcessedImage = tf.tidy(() => {
+      //   const b = tf.scalar(127.5);
 
-        let res = tf.div(imageTensor,b);
+      //   let res = tf.div(imageTensor,b);
         
-        res = tf.sub( res, 1) ;
+      //   res = tf.sub( res, 1) ;
 
-        // https://github.com/keras-team/keras-applications/blob/master/keras_applications/imagenet_utils.py#L43
+      //   // https://github.com/keras-team/keras-applications/blob/master/keras_applications/imagenet_utils.py#L43
 
 
 
-        let normalized = res;            
-        const alignCorners = true;
-        // Note it would probably be better to center crop 
-        // the image than to resize
-        const resized =
-          normalized.resizeBilinear([IMAGE_SIZE, IMAGE_SIZE], alignCorners)
-        const batchedImage = resized.expandDims();
-        return batchedImage;
-      })          
+      //   let normalized = res;            
+      //   const alignCorners = true;
+      //   // Note it would probably be better to center crop 
+      //   // the image than to resize
+      //   const resized =
+      //     normalized.resizeBilinear([IMAGE_SIZE, IMAGE_SIZE], alignCorners)
+      //   const batchedImage = resized.expandDims();
+      //   return batchedImage;
+      // })          
 
       console.log("Preprocessing image: Done")
 

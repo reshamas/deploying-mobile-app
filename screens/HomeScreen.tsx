@@ -121,7 +121,7 @@ export default class HomeScreen extends React.Component {
                               <ListItem
                                   key={index}
                                   title={item.className}
-                                  subtitle={`prob: ${item.probability}`} hideChevron={true}
+                                  subtitle={`prob: ${item.probability.toFixed(3)}`} hideChevron={true}
                               />
                           ))
                       }

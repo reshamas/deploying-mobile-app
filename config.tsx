@@ -1,8 +1,8 @@
 const AppConfig = 
 
 {
-    title : "What Image Is It?"
-    ,description: `This is normal text
+    title : "Food Classifier"
+    ,description: `
     
 This mobile app was developed by 
 - [Nidhin Pattaniyil](https://npatta01.github.io)
@@ -10,13 +10,12 @@ This mobile app was developed by
 
 This app lets you submit a photo of food and returns the predicted food category. 🍕
 
-The model was developed using the [food-101 dataset](https://www.vision.ee.ethz.ch/datasets_extra/food-101/) and the [fastai](https://github.com/fastai/fastai) deep learning library, which is built on PyTorch.
-
-
-# h1 Heading 8-)
-
-**This is some bold text!**
+The model was developed using the [Food-101 dataset](https://www.vision.ee.ethz.ch/datasets_extra/food-101/) and TensorFlow 2.3.0.
     
+This is a Manning [liveProject](https://liveproject.manning.com).
+
+Notes:  
+- Time to inference will vary by user as it is dependent on the hardware.  
     `
 };
 

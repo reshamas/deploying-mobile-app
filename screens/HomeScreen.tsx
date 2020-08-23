@@ -27,7 +27,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 
 
-
+const IMAGE_SIZE = 224;
 
 export default class HomeScreen extends React.Component {
   static navigationOptions = {
@@ -56,6 +56,7 @@ export default class HomeScreen extends React.Component {
     this.model = await tf.loadLayersModel(bundleResourceIO(modelJSON, modelWeights));
     this.model_classes = require("../assets/model/classes.json")
     this.model.summary();
+    this.model.predict(tf.zeros([1, IMAGE_SIZE, IMAGE_SIZE, 3]));
 
     console.log("Done loading custom model");
 
@@ -202,59 +203,92 @@ export default class HomeScreen extends React.Component {
 
   };
 
+  imageToTensor(rawImageData:any) {
+    const TO_UINT8ARRAY = true
+    const { width, height, data } = jpeg.decode(rawImageData, TO_UINT8ARRAY)
+    // Drop the alpha channel info for mobilenet
+    const buffer = new Uint8Array(width * height * 3)
+    let offset = 0 // offset into original data
+    for (let i = 0; i < buffer.length; i += 3) {
+      buffer[i] = data[offset]
+      buffer[i + 1] = data[offset + 1]
+      buffer[i + 2] = data[offset + 2]
+
+      offset += 4
+    }
+
+    return tf.tensor3d(buffer, [height, width, 3])
+  }
   _classifyImage = async () => {
     try {
       this.setState({ predictions: [] })
       console.log(`Classifying Image: Start `)
-      
+      const timeStart = new Date().getTime()
+      let time_stage = null;
 
       console.log(`Fetching Image: Start `)
-      const imgB64 = await FileSystem.readAsStringAsync(this.state.image.uri, {
-        encoding: FileSystem.EncodingType.Base64,
+      
+      const imageAssetPath = Image.resolveAssetSource(this.state.image)
+      console.log(imageAssetPath.uri);
+      const imgB64 = await FileSystem.readAsStringAsync(imageAssetPath.uri, {
+      	encoding: FileSystem.EncodingType.Base64,
       });
+
       const imgBuffer = tf.util.encodeString(imgB64, 'base64').buffer;
-      const raw = new Uint8Array(imgBuffer)  
-      const imageTensor = decodeJpeg(raw);
+      const raw = new Uint8Array(imgBuffer)
+      const imageTensor = this.imageToTensor(raw);
+      //console.log('imageTensor: ', imageTensor);
+
+      
+      // const imgB64 = await FileSystem.readAsStringAsync(this.state.image.uri, {
+      //   encoding: FileSystem.EncodingType.Base64,
+      // });
+      // const imgBuffer = tf.util.encodeString(imgB64, 'base64').buffer;
+      // const raw = new Uint8Array(imgBuffer)  
+      // const imageTensor = decodeJpeg(raw);
       console.log(`Fetching Image: Done `)
+      const timeLoadDone = new Date().getTime()
 
       // const imageAssetPath = Image.resolveAssetSource(this.state.image)
       // const response = await fetch(imageAssetPath.uri, {}, { isBinary: true })
       // const rawImageData = await response.arrayBuffer()
-      // const imageTensor = this.imageToTensor(rawImageData)
-      // const predictions = await this.model.classify(imageTensor);
+      // //const imageTensor = this.imageToTensor(rawImageData)
+      // const imageTensor = decodeJpeg(rawImageData)
+      //const predictions = await this.model.classify(imageTensor);
 
-      const IMAGE_SIZE = 224;
+      
 
       console.log("Preprocessing image: Start")
-      const preProcessedImage = imageTensor;
-      // const preProcessedImage = tf.tidy(() => {
-      //   const b = tf.scalar(127.5);
+      //const preProcessedImage = imageTensor;
+      const preProcessedImage = tf.tidy(() => {
+        const b = tf.scalar(127.5);
 
-      //   let res = tf.div(imageTensor,b);
+        let res = tf.div(imageTensor,b);
         
-      //   res = tf.sub( res, 1) ;
+        res = tf.sub( res, 1) ;
 
-      //   // https://github.com/keras-team/keras-applications/blob/master/keras_applications/imagenet_utils.py#L43
+        // https://github.com/keras-team/keras-applications/blob/master/keras_applications/imagenet_utils.py#L43
 
 
 
-      //   let normalized = res;            
-      //   const alignCorners = true;
-      //   // Note it would probably be better to center crop 
-      //   // the image than to resize
-      //   const resized =
-      //     normalized.resizeBilinear([IMAGE_SIZE, IMAGE_SIZE], alignCorners)
-      //   const batchedImage = resized.expandDims();
-      //   return batchedImage;
-      // })          
+        let normalized = res;            
+        const alignCorners = true;
+        // Note it would probably be better to center crop 
+        // the image than to resize
+        const resized =
+          normalized.resizeBilinear([IMAGE_SIZE, IMAGE_SIZE], alignCorners)
+        const batchedImage = resized.expandDims();
+        return batchedImage;
+      })          
 
       console.log("Preprocessing image: Done")
+      const timePrepocessDone = new Date().getTime()
 
       console.log("Prediction: Start")
       const predictions = await this.model.predict(preProcessedImage);
       console.log(predictions);
       console.log("Prediction: Done")
-
+      const timePredictionDone = new Date().getTime()
 
       console.log("Post Processing: Start")
 
@@ -280,7 +314,15 @@ export default class HomeScreen extends React.Component {
 
       tf.dispose[predictions, preProcessedImage];
       console.log("Post Processing: Done")
+      const timeEnd = new Date().getTime()
 
+      console.log(`Time Total: ${timeEnd-timeStart} \n
+      Time Loading: ${timeLoadDone-timeStart} \n
+      Time PreProcess: ${timePrepocessDone-timeStart} \n
+      Time Prediction: ${timePredictionDone-timeStart} \n
+
+      
+      `)
 
 
       this.setState({ predictions: mobilenetClasses })

@@ -1549,6 +1549,11 @@
   dependencies:
     type-detect "4.0.8"
 
+"@tensorflow-models/mobilenet@^2.0.4":
+  version "2.0.4"
+  resolved "https://registry.yarnpkg.com/@tensorflow-models/mobilenet/-/mobilenet-2.0.4.tgz#7f40771fcc650f50febd49be72372d39c15f6f95"
+  integrity sha512-fkcxDBldlYitDCV88xETwAQoBIC8xYKdDu80uBDuBZBfNC4k/jeVbZHM28WjvTDsJN7d7dYO4NbIkRAH0XHKSQ==
+
 "@tensorflow/tfjs-backend-cpu@2.0.0":
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/@tensorflow/tfjs-backend-cpu/-/tfjs-backend-cpu-2.0.0.tgz#26d3ed8a6d814e751adc22e6036e40ed8940b5ac"
@@ -1628,7 +1633,7 @@
     buffer "^5.2.1"
     jpeg-js "^0.3.6"
 
-"@tensorflow/tfjs@^2.1.0":
+"@tensorflow/tfjs@^2.3.0":
   version "2.3.0"
   resolved "https://registry.yarnpkg.com/@tensorflow/tfjs/-/tfjs-2.3.0.tgz#f9020b9fb89241d5766a5b0271a9094c7dcb9d3f"
   integrity sha512-84vrkbktqnPYESZZOT2AN/LFm3qCF0UleGI7P+wgdsOYcwBoe8eZcVdhje/u9O4GYqwmn0+a8F+Kk4TmcFdrEw==
@@ -3320,7 +3325,7 @@ expo-asset@~8.1.7:
     path-browserify "^1.0.0"
     url-parse "^1.4.4"
 
-expo-camera@^8.2.0:
+expo-camera@~8.3.1:
   version "8.3.1"
   resolved "https://registry.yarnpkg.com/expo-camera/-/expo-camera-8.3.1.tgz#e17c080c4aafd71f66495c2b6dfc53dcd31b0368"
   integrity sha512-weFanDVsJKAbm5g90zWIUD4zVrXKoQq7g2BTg4zy4p24YsGfXKYRH4ja0YRgr3Ci/abGaaRNZjsPMJiNskR+tA==
@@ -3360,19 +3365,25 @@ expo-font@~8.2.1:
     fbjs "1.0.0"
     fontfaceobserver "^2.1.0"
 
-expo-gl-cpp@~8.4.0:
-  version "8.4.0"
-  resolved "https://registry.yarnpkg.com/expo-gl-cpp/-/expo-gl-cpp-8.4.0.tgz#68f259b85c2fe943249b63bc087e3d2d28a8816c"
-  integrity sha512-b7kKiA/xmca1oMSv0eQHVr0GZyj3Qa0fdnCCAteXm72ysbK2PyFmzuJHG5TwM4r7jzvxi0NClB7O5dsbggPD4A==
+expo-gl-cpp@~8.3.1:
+  version "8.3.1"
+  resolved "https://registry.yarnpkg.com/expo-gl-cpp/-/expo-gl-cpp-8.3.1.tgz#9030f4f995c722e920bd122ad7266ab07fa5f3e7"
+  integrity sha512-XuC3GbAUP5A99gcGqQyju8OIckMLi6gQY16wq8Ot/OuN6jzkWX1PSeWA+n1hoiQAIVh5gDX9PUONJBZuW5qy5Q==
 
-expo-gl@^8.1.0:
-  version "8.4.0"
-  resolved "https://registry.yarnpkg.com/expo-gl/-/expo-gl-8.4.0.tgz#b29f46d03ddd5dd9fecc1a8703f9bce20f4f3e24"
-  integrity sha512-prVz0E3nkhtPD0MqCf/CvqAAvk6fUR/Bgb4ogsIUl+JX3XCdTcSlSWoM/Ky5s2dp0oApTWRcAdLmUtVXSoIysg==
+expo-gl@~8.3.1:
+  version "8.3.1"
+  resolved "https://registry.yarnpkg.com/expo-gl/-/expo-gl-8.3.1.tgz#a8b579c91e63e66761b138305f50a6db01c13e8b"
+  integrity sha512-ulpfCEmXKhogUAbavwuKj6eKQNMTxxAeNeFBtgx2i9qEthLWFdoxdzgf+dZzhmc4PsGQTEqtt57oTnO3J5mABA==
   dependencies:
-    expo-gl-cpp "~8.4.0"
+    expo-gl-cpp "~8.3.1"
     fbjs "1.0.0"
-    invariant "^2.2.4"
+    invariant "2.2.4"
+    prop-types "^15.7.2"
+
+expo-image-loader@~1.1.1:
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/expo-image-loader/-/expo-image-loader-1.1.1.tgz#6c65bd1a41761c8acb91575060579e4864b93394"
+  integrity sha512-qI4opRO2D1MGRAbHxYnMBJ4LzKT17KfqbM5oTxNoMZCRNpzB0xsuJrWy5C+0UOkV0vnqQyjvCtynTSawhWnl9A==
 
 expo-image-manipulator@~8.2.1:
   version "8.2.1"
@@ -3454,7 +3465,7 @@ expo-web-browser@~8.3.1:
   dependencies:
     compare-urls "^2.0.0"
 
-expo@~38.0.8:
+expo@^38.0.9:
   version "38.0.9"
   resolved "https://registry.yarnpkg.com/expo/-/expo-38.0.9.tgz#dac9e4ccee0b86747b71c1b3a827d60fe340c81e"
   integrity sha512-xT9h62Vi5e7nqbX+zWCqVw09wCOvoLJTy4cAw3ZE41ENidqCjZAYXv1DXx2LvQcGjZdarHkT2TzJZfl6zHFxDw==
@@ -6482,6 +6493,31 @@ react-native-status-bar-height@^2.5.0:
   version "2.5.0"
   resolved "https://registry.yarnpkg.com/react-native-status-bar-height/-/react-native-status-bar-height-2.5.0.tgz#bc0fb85230603850aab9667ee8111a62954de90c"
   integrity sha512-sYBCPYA/NapBSHkdm/IVL4ID3LLlIuLqINi2FBDyMkc2BU9pfSGOtkz9yfxoK39mYJuTrlTOQ7mManARUsYDSA==
+
+react-native-unimodules@^0.10.1:
+  version "0.10.1"
+  resolved "https://registry.yarnpkg.com/react-native-unimodules/-/react-native-unimodules-0.10.1.tgz#05a5ef248e88589528e7ef925137a345dde96ca4"
+  integrity sha512-U/GexLJWwDOXhsvSSz197gPVRoNVK4tY1cjvZC+748Q4mvc9v4ztB7niKaoaEbNdTjB/pE2NYlZW4013d1wQNw==
+  dependencies:
+    "@unimodules/core" "~5.3.0"
+    "@unimodules/react-native-adapter" "~5.4.0"
+    chalk "^2.4.2"
+    expo-asset "~8.1.7"
+    expo-constants "~9.1.1"
+    expo-file-system "~9.0.1"
+    expo-image-loader "~1.1.1"
+    expo-permissions "~9.0.1"
+    unimodules-app-loader "~1.2.0"
+    unimodules-barcode-scanner-interface "~5.2.1"
+    unimodules-camera-interface "~5.2.1"
+    unimodules-constants-interface "~5.2.1"
+    unimodules-face-detector-interface "~5.2.1"
+    unimodules-file-system-interface "~5.2.1"
+    unimodules-font-interface "~5.2.1"
+    unimodules-image-loader-interface "~5.2.1"
+    unimodules-permissions-interface "~5.2.1"
+    unimodules-sensors-interface "~5.2.1"
+    unimodules-task-manager-interface "~5.2.1"
 
 react-native-web@~0.11.7:
   version "0.11.7"

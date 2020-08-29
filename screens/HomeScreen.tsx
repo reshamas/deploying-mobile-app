@@ -51,11 +51,11 @@ export default class HomeScreen extends React.Component {
     this.setState({ isTfReady: true,});
 
 
-    const modelJSON = require('../assets/model/model.json');
-    const modelWeights = require('../assets/model/group1-shard1of1.bin');
-    this.model = await tf.loadLayersModel(bundleResourceIO(modelJSON, modelWeights));
-    this.model_classes = require("../assets/model/classes.json")
-    this.model.summary();
+    const modelJSON = require('../assets/model_tfjs/model.json');
+    const modelWeights = require('../assets/model_tfjs/group1-shard1of1.bin');
+    this.model = await tf.loadGraphModel(bundleResourceIO(modelJSON, modelWeights));
+    this.model_classes = require("../assets/model_tfjs/classes.json")
+    //this.model.summary();
     this.model.predict(tf.zeros([1, IMAGE_SIZE, IMAGE_SIZE, 3]));
 
     console.log("Done loading custom model");

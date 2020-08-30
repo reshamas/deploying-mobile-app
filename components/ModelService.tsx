@@ -2,7 +2,8 @@ import * as tf from '@tensorflow/tfjs';
 import * as FileSystem from 'expo-file-system'
 import { fetch ,asyncStorageIO,bundleResourceIO,decodeJpeg} from '@tensorflow/tfjs-react-native'
 import * as jpeg from 'jpeg-js'
-import {Image, ImageSourcePropType} from 'react-native';
+import {Image} from 'react-native';
+import * as ImageManipulator from 'expo-image-manipulator';
 
 export interface ModelPrediction {
   className:string;
@@ -25,25 +26,16 @@ export interface IModelPredictionResponse {
 const imageToTensor = (imgB64:string)=> {
   const imgBuffer = tf.util.encodeString(imgB64, 'base64').buffer;
   const rawImageData = new Uint8Array(imgBuffer)  
-  
-  const TO_UINT8ARRAY = true
-    const { width, height, data } = jpeg.decode(rawImageData, TO_UINT8ARRAY)
-    // Drop the alpha channel info for mobilenet
-    const buffer = new Uint8Array(width * height * 3)
-    let offset = 0 // offset into original data
-    for (let i = 0; i < buffer.length; i += 3) {
-      buffer[i] = data[offset]
-      buffer[i + 1] = data[offset + 1]
-      buffer[i + 2] = data[offset + 2]
-
-      offset += 4
-    }
-
-    return tf.tensor3d(buffer, [height, width, 3])
+ 
+  return decodeJpeg(rawImageData);
 }
 
 
-const  fetchImage = async (image:ImageSourcePropType) => {
+const  fetchImage = async (image:ImageManipulator.ImageResult) => {
+  
+  if (image.base64){
+    return image.base64;
+  }
   const imageAssetPath = Image.resolveAssetSource(image)
   console.log(imageAssetPath.uri);
 
@@ -122,7 +114,7 @@ export class ModelService {
 
     }
 
-    async classifyImage(image:ImageSourcePropType):Promise<IModelPredictionResponse>{ 
+    async classifyImage(image:ImageManipulator.ImageResult):Promise<IModelPredictionResponse>{ 
       const predictionResponse = {timing:null,predictions:null,error:null} as IModelPredictionResponse;
       try {
           console.log(`Classifying Image: Start `)
@@ -176,11 +168,12 @@ export class ModelService {
             } as IModelPredictionTiming;
             predictionResponse.timing = timing;
 
-            console.log(`Timing: ${timing}`)
           });
           
           
           console.log(`Classifying Image: End `);
+
+          console.log(`Response:  ${JSON.stringify(predictionResponse ,null, 2 ) } `);
           return predictionResponse as IModelPredictionResponse
           
       } catch (error) {

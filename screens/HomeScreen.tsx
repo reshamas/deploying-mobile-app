@@ -119,7 +119,7 @@ export default class HomeScreen extends React.Component<{},State> {
                   </View>
 
 
-                  <Text h3>Timing</Text>
+                  <Text h3>Timing (ms)</Text>
                   <View>
                     <Text>total time: {this.state.timing?.totalTime}</Text>
                     <Text>loading time: {this.state.timing?.imageLoadingTime}</Text>

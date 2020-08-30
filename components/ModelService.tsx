@@ -15,6 +15,7 @@ export interface IModelPredictionTiming {
   imageLoadingTime:number;
   imagePreprocessing:number;
   imagePrediction:number;
+  imageDecodePrediction:number;
 }
 
 export interface IModelPredictionResponse {
@@ -164,7 +165,8 @@ export class ModelService {
               totalTime: timeEnd-timeStart,
               imageLoadingTime : timeLoadDone-timeStart,
               imagePreprocessing : timePrepocessDone-timeLoadDone,
-              imagePrediction : timePredictionDone-timePrepocessDone
+              imagePrediction : timePredictionDone-timePrepocessDone ,
+              imageDecodePrediction : timeEnd-timePredictionDone
             } as IModelPredictionTiming;
             predictionResponse.timing = timing;
 

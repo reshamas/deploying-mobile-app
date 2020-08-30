@@ -4,9 +4,7 @@ import * as React from 'react';
 
 import * as Permissions from 'expo-permissions'
 import * as tf from '@tensorflow/tfjs';
-import { fetch ,asyncStorageIO,bundleResourceIO,decodeJpeg} from '@tensorflow/tfjs-react-native'
 import * as jpeg from 'jpeg-js'
-import * as FileSystem from 'expo-file-system'
 
 
 import {
@@ -15,7 +13,7 @@ import {
   View,
   ScrollView,
   ActivityIndicator,
-
+  ImageSourcePropType,
 } from 'react-native';
 import {AppConfig} from "../config"
 
@@ -24,47 +22,39 @@ import {Text, Icon, ListItem} from 'react-native-elements';
 
 
 import * as ImagePicker from 'expo-image-picker';
-import * as ImageManipulator from 'expo-image-manipulator';
+import { ModelService, IModelPredictionResponse,IModelPredictionTiming,ModelPrediction } from '../components/ModelService';
 
 
-const IMAGE_SIZE = 224;
+type State = {
+  image: ImageSourcePropType; 
+  loading:boolean;
+  isTfReady: boolean;
+  isModelReady: boolean;
+  predictions: ModelPrediction[]|null;
+  error:string|null;
+  timing:IModelPredictionTiming|null;
+};
 
-export default class HomeScreen extends React.Component {
+export default class HomeScreen extends React.Component<{},State> {
   static navigationOptions = {
     header: null,
   };
 
-  state = {
+  state:State = {
       image: {},
       loading: false,
       isTfReady: false,
       isModelReady: false,
-      predictions: [],
-      model:null
+      predictions: null,
+      error:null,
+      timing:null
   }
 
-  model:any =null;
-  model_classes:any = [];
+  modelService!:ModelService;
 
   async componentDidMount() {
-    await tf.ready(); // preparing TensorFlow
-    this.setState({ isTfReady: true,});
-
-
-    const modelJSON = require('../assets/model/model.json');
-    const modelWeights = require('../assets/model/group1-shard1of1.bin');
-    this.model = await tf.loadLayersModel(bundleResourceIO(modelJSON, modelWeights));
-    this.model_classes = require("../assets/model/classes.json")
-    this.model.summary();
-    this.model.predict(tf.zeros([1, IMAGE_SIZE, IMAGE_SIZE, 3]));
-
-    console.log("Done loading custom model");
-
-    //this.model = await mobilenet.load(); // preparing MobileNet model
-
-
-    this.setState({ isModelReady: true  });
-
+    this.modelService = await ModelService.create();
+    this.setState({ isTfReady: true,isModelReady: true });
   }
 
   render() {
@@ -111,7 +101,7 @@ export default class HomeScreen extends React.Component {
           return <ActivityIndicator size="large" color="#0000ff"/>
       }
       let predictions= this.state.predictions || [];
-      if (this.state.predictions.length > 0) {
+      if (predictions.length > 0) {
           return (
               <View style={styles.predictionsContentContainer}>
                   <Text h3>Predictions</Text>
@@ -125,6 +115,16 @@ export default class HomeScreen extends React.Component {
                               />
                           ))
                       }
+                  </View>
+
+                  <Text h3>Timing</Text>
+                  <View>
+                    <Text>total time: {this.state.timing?.totalTime}</Text>
+                    <Text>loading time: {this.state.timing?.imageLoadingTime}</Text>
+                    <Text>preprocessing time: {this.state.timing?.imagePreprocessing}</Text>
+                    <Text>prediction time: {this.state.timing?.imagePrediction}</Text>
+
+                   
                   </View>
 
               </View>
@@ -168,10 +168,6 @@ export default class HomeScreen extends React.Component {
         if (!response.cancelled) {
           const source = { uri: response.uri }
 
-          
-
-
-
           this.setState({ image: source })
           this._classifyImage()
         }
@@ -203,7 +199,7 @@ export default class HomeScreen extends React.Component {
 
   };
 
-  imageToTensor(rawImageData:any) {
+  imageToTensor___(rawImageData:any) {
     const TO_UINT8ARRAY = true
     const { width, height, data } = jpeg.decode(rawImageData, TO_UINT8ARRAY)
     // Drop the alpha channel info for mobilenet
@@ -221,138 +217,28 @@ export default class HomeScreen extends React.Component {
   }
   _classifyImage = async () => {
     try {
-      this.setState({ predictions: [] })
-      console.log(`Classifying Image: Start `)
-      const timeStart = new Date().getTime()
-      let time_stage = null;
-
-      console.log(`Fetching Image: Start `)
+      console.log('numTensors (before prediction): ' + tf.memory().numTensors);
+      this.setState({ predictions: [] ,error:null })
+      const predictionResponse = await this.modelService.classifyImage(this.state.image);
       
-      const imageAssetPath = Image.resolveAssetSource(this.state.image)
-      console.log(imageAssetPath.uri);
-      const imgB64 = await FileSystem.readAsStringAsync(imageAssetPath.uri, {
-      	encoding: FileSystem.EncodingType.Base64,
-      });
-
-      const imgBuffer = tf.util.encodeString(imgB64, 'base64').buffer;
-      const raw = new Uint8Array(imgBuffer)
-      const imageTensor = this.imageToTensor(raw);
-      //console.log('imageTensor: ', imageTensor);
-
       
-      // const imgB64 = await FileSystem.readAsStringAsync(this.state.image.uri, {
-      //   encoding: FileSystem.EncodingType.Base64,
-      // });
-      // const imgBuffer = tf.util.encodeString(imgB64, 'base64').buffer;
-      // const raw = new Uint8Array(imgBuffer)  
-      // const imageTensor = decodeJpeg(raw);
-      console.log(`Fetching Image: Done `)
-      const timeLoadDone = new Date().getTime()
-
-      // const imageAssetPath = Image.resolveAssetSource(this.state.image)
-      // const response = await fetch(imageAssetPath.uri, {}, { isBinary: true })
-      // const rawImageData = await response.arrayBuffer()
-      // //const imageTensor = this.imageToTensor(rawImageData)
-      // const imageTensor = decodeJpeg(rawImageData)
-      //const predictions = await this.model.classify(imageTensor);
-
+      if (predictionResponse.error){
+        this.setState({ error: predictionResponse.error })
+      }else{
+        const predictions = predictionResponse.predictions  || null;
+        this.setState({ predictions: predictions, timing:predictionResponse.timing})
+      }
       
-
-      console.log("Preprocessing image: Start")
-      //const preProcessedImage = imageTensor;
-      const preProcessedImage = tf.tidy(() => {
-        const b = tf.scalar(127.5);
-
-        let res = tf.div(imageTensor,b);
-        
-        res = tf.sub( res, 1) ;
-
-        // https://github.com/keras-team/keras-applications/blob/master/keras_applications/imagenet_utils.py#L43
-
-
-
-        let normalized = res;            
-        const alignCorners = true;
-        // Note it would probably be better to center crop 
-        // the image than to resize
-        const resized =
-          normalized.resizeBilinear([IMAGE_SIZE, IMAGE_SIZE], alignCorners)
-        const batchedImage = resized.expandDims();
-        return batchedImage;
-      })          
-
-      console.log("Preprocessing image: Done")
-      const timePrepocessDone = new Date().getTime()
-
-      console.log("Prediction: Start")
-      const predictions = await this.model.predict(preProcessedImage);
-      console.log(predictions);
-      console.log("Prediction: Done")
-      const timePredictionDone = new Date().getTime()
-
-      console.log("Post Processing: Start")
-
-      // post processing
-      const mobilenetClasses = tf.tidy(() => {
-        const topK = 3;
-        
-
-        const {values, indices} = predictions.topk(topK);
-        const topKValues = values.dataSync();
-        const topKIndices = indices.dataSync();
-
-        const topClassesAndProbs = [];
-        for (let i = 0; i < topKIndices.length; i++) {
-          const indStr  = String(i)
-          topClassesAndProbs.push({
-            className: this.model_classes[topKIndices[i]],
-            probability: topKValues[i]
-          });
-        }
-        return topClassesAndProbs;
-      })
-
-      tf.dispose[predictions, preProcessedImage];
-      console.log("Post Processing: Done")
-      const timeEnd = new Date().getTime()
-
-      console.log(`Time Total: ${timeEnd-timeStart} \n
-      Time Loading: ${timeLoadDone-timeStart} \n
-      Time PreProcess: ${timePrepocessDone-timeStart} \n
-      Time Prediction: ${timePredictionDone-timeStart} \n
-
       
-      `)
+      //tf.dispose(predictions);
+      console.log('numTensors (after prediction): ' + tf.memory().numTensors);
 
-
-      this.setState({ predictions: mobilenetClasses })
-      console.log(mobilenetClasses)
-
-      console.log(`Classifying Image: End `)
     } catch (error) {
       console.log('Exception Error: ', error)
     }
   }
 
 }
-
-
-const styles1 = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  separator: {
-    marginVertical: 30,
-    height: 1,
-    width: '80%',
-  },
-});
 
 
 const styles = StyleSheet.create({

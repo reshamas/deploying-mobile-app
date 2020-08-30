@@ -22,7 +22,7 @@ import {Text, Icon, ListItem} from 'react-native-elements';
 
 
 import * as ImagePicker from 'expo-image-picker';
-import { ModelService } from '../components/ModelService';
+import { ModelService, IModelPredictionResponse,IModelPredictionTiming,ModelPrediction } from '../components/ModelService';
 
 
 type State = {
@@ -31,6 +31,8 @@ type State = {
   isTfReady: boolean;
   isModelReady: boolean;
   predictions: ModelPrediction[]|null;
+  error:string|null;
+  timing:IModelPredictionTiming|null;
 };
 
 export default class HomeScreen extends React.Component<{},State> {
@@ -43,14 +45,15 @@ export default class HomeScreen extends React.Component<{},State> {
       loading: false,
       isTfReady: false,
       isModelReady: false,
-      predictions: null
+      predictions: null,
+      error:null,
+      timing:null
   }
 
   modelService!:ModelService;
 
   async componentDidMount() {
     this.modelService = await ModelService.create();
-    this.modelService.intialize();
     this.setState({ isTfReady: true,isModelReady: true });
   }
 
@@ -112,6 +115,16 @@ export default class HomeScreen extends React.Component<{},State> {
                               />
                           ))
                       }
+                  </View>
+
+                  <Text h3>Timing</Text>
+                  <View>
+                    <Text>total time: {this.state.timing?.totalTime}</Text>
+                    <Text>loading time: {this.state.timing?.imageLoadingTime}</Text>
+                    <Text>preprocessing time: {this.state.timing?.imagePreprocessing}</Text>
+                    <Text>prediction time: {this.state.timing?.imagePrediction}</Text>
+
+                   
                   </View>
 
               </View>
@@ -205,9 +218,18 @@ export default class HomeScreen extends React.Component<{},State> {
   _classifyImage = async () => {
     try {
       console.log('numTensors (before prediction): ' + tf.memory().numTensors);
-      this.setState({ predictions: [] })
-      const predictions = await this.modelService.classifyImage(this.state.image);
-      this.setState({ predictions: predictions })
+      this.setState({ predictions: [] ,error:null })
+      const predictionResponse = await this.modelService.classifyImage(this.state.image);
+      
+      
+      if (predictionResponse.error){
+        this.setState({ error: predictionResponse.error })
+      }else{
+        const predictions = predictionResponse.predictions  || null;
+        this.setState({ predictions: predictions, timing:predictionResponse.timing})
+      }
+      
+      
       //tf.dispose(predictions);
       console.log('numTensors (after prediction): ' + tf.memory().numTensors);
 

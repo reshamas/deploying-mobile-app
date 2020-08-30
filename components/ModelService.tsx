@@ -7,7 +7,19 @@ import {Image, ImageSourcePropType} from 'react-native';
 export interface ModelPrediction {
   className:string;
   probability:number;
+}
 
+export interface IModelPredictionTiming {
+  totalTime:number;
+  imageLoadingTime:number;
+  imagePreprocessing:number;
+  imagePrediction:number;
+}
+
+export interface IModelPredictionResponse {
+  predictions?:ModelPrediction[] | null
+  timing?:IModelPredictionTiming | null
+  error?:string | null
 }
 
 const imageToTensor = (imgB64:string)=> {
@@ -83,7 +95,9 @@ export class ModelService {
     private model:tf.GraphModel;
     private model_classes: String[];
     private IMAGE_SIZE = 224;
-    constructor(image_size:number=224,model:tf.GraphModel,model_classes: String[] ){
+    private static instance: ModelService;
+
+    constructor(image_size:number=224,model:tf.GraphModel, model_classes: String[] ){
         this.IMAGE_SIZE=image_size;
         this.model = model;
         this.model_classes=model_classes;
@@ -91,25 +105,25 @@ export class ModelService {
 
 
     static async create(image_size=224) {
-      
-      const modelJSON = require('../assets/model_tfjs/model.json');
-      const modelWeights = require('../assets/model_tfjs/group1-shard1of1.bin');
-      const model = await tf.loadGraphModel(bundleResourceIO(modelJSON, modelWeights));
-      const model_classes = require("../assets/model_tfjs/classes.json")
-
-
-      return new ModelService(image_size,model,model_classes);
-
-
-    }
-
-    async intialize(){
+      if (!ModelService.instance){
         await tf.ready(); 
-        this.model.predict(tf.zeros([1, this.IMAGE_SIZE, this.IMAGE_SIZE, 3]));
+        const modelJSON = require('../assets/model_tfjs/model.json');
+        const modelWeights = require('../assets/model_tfjs/group1-shard1of1.bin');
+        const model_classes = require("../assets/model_tfjs/classes.json")
+
+        const model = await tf.loadGraphModel(bundleResourceIO(modelJSON, modelWeights));
+        model.predict(tf.zeros([1, image_size, image_size, 3]));
+        
+        ModelService.instance = new ModelService(image_size,model,model_classes);
+
+      }
+
+      return ModelService.instance;
+
     }
 
-    async classifyImage(image:ImageSourcePropType):Promise<ModelPrediction[]>{ 
-      let mobilenetClasses:ModelPrediction[]=[];
+    async classifyImage(image:ImageSourcePropType):Promise<IModelPredictionResponse>{ 
+      const predictionResponse = {timing:null,predictions:null,error:null} as IModelPredictionResponse;
       try {
           console.log(`Classifying Image: Start `)
           const timeStart = new Date().getTime()
@@ -135,16 +149,15 @@ export class ModelService {
             const timePrepocessDone = new Date().getTime()
       
             console.log("Prediction: Start")
-            const predictions:tf.Tensor = this.model.predict(preProcessedImage) as tf.Tensor;
+            const predictionsTensor:tf.Tensor = this.model.predict(preProcessedImage) as tf.Tensor;
             
-            console.log(predictions);
             console.log("Prediction: Done")
             const timePredictionDone = new Date().getTime()
       
             console.log("Post Processing: Start")
       
             // post processing
-            mobilenetClasses  = decodePredictions(predictions,this.model_classes,3);
+            predictionResponse.predictions  = decodePredictions(predictionsTensor,this.model_classes,3);
             
             
             //tf.dispose(imageTensor);
@@ -154,26 +167,26 @@ export class ModelService {
             console.log("Post Processing: Done")
 
             const timeEnd = new Date().getTime()
-    
-            console.log(`Time Total: ${timeEnd-timeStart} \n
-            Time Loading: ${timeLoadDone-timeStart} \n
-            Time PreProcess: ${timePrepocessDone-timeStart} \n
-            Time Prediction: ${timePredictionDone-timeStart} \n
             
-            `)
+            const timing:IModelPredictionTiming = {
+              totalTime: timeEnd-timeStart,
+              imageLoadingTime : timeLoadDone-timeStart,
+              imagePreprocessing : timePrepocessDone-timeLoadDone,
+              imagePrediction : timePredictionDone-timePrepocessDone
+            } as IModelPredictionTiming;
+            predictionResponse.timing = timing;
+
+            console.log(`Timing: ${timing}`)
           });
           
           
           console.log(`Classifying Image: End `);
-
-          console.log(mobilenetClasses)
-          console.log(typeof(mobilenetClasses))
-          return mobilenetClasses
+          return predictionResponse as IModelPredictionResponse
           
       } catch (error) {
           console.log('Exception Error: ', error)
+          return {error}
       }
-      return mobilenetClasses;
     }
 }
 

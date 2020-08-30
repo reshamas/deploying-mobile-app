@@ -1,15 +1,19 @@
 import * as React from 'react';
 import { StyleSheet } from 'react-native';
 
-import { Text, View } from '../components/Themed';
+import { View } from '../components/Themed';
 import Markdown from 'react-native-markdown-display';
 import {AppConfig} from  "../config"
-
+import {getColor} from "../components/Themed"
 export default function AboutScreen() {
+  const color = getColor('text')
   return (
     <View style={styles.container}>
 
-      <Markdown>
+      <Markdown  style={{
+                body: {color: color},
+              
+              }}>
             {AppConfig.description}
           </Markdown>
     </View>
@@ -22,14 +26,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 10
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  separator: {
-    marginVertical: 5,
-    height: 1,
-    width: '90%',
-  },
+  }
+  
+
 });

@@ -16,6 +16,11 @@ export default {
               AboutScreen: 'two',
             },
           },
+          TabDebug: {
+            screens: {
+              DebugScreen: 'three',
+            },
+          },
         },
       },
       NotFound: '*',

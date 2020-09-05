@@ -8,7 +8,8 @@ import Colors from '../constants/Colors';
 import useColorScheme from '../hooks/useColorScheme';
 import HomeScreen from '../screens/HomeScreen';
 import AboutScreen from '../screens/AboutScreen';
-import { BottomTabParamList, HomeParamList, AboutParamList } from '../types';
+import DebugScreen from '../screens/DebugScreen';
+import { BottomTabParamList, HomeParamList, AboutParamList, DebugParamList } from '../types';
 
 const BottomTab = createBottomTabNavigator<BottomTabParamList>();
 
@@ -30,7 +31,14 @@ export default function BottomTabNavigator() {
         name="About"
         component={TabAboutNavigator}
         options={{
-          tabBarIcon: ({ color }) => <TabBarIcon name="ios-code" color={color} />,
+          tabBarIcon: ({ color }) => <TabBarIcon color={color} name={Platform.OS === 'ios' ? 'ios-information' : 'md-information'} />,
+        }}
+      />
+      <BottomTab.Screen
+        name="Debug"
+        component={TabDebugNavigator}
+        options={{
+          tabBarIcon: ({ color }) => <TabBarIcon color={color} name={Platform.OS === 'ios' ? 'ios-debug' : 'md-debug'} />,
         }}
       />
     </BottomTab.Navigator>
@@ -72,4 +80,17 @@ function TabAboutNavigator() {
     </AboutTabStack.Navigator>
   );
 }
-  
+
+const DebugTabStack = createStackNavigator<DebugParamList>();
+
+function TabDebugNavigator() {
+  return (
+    <DebugTabStack.Navigator>
+      <DebugTabStack.Screen
+        name="DebugScreen"
+        component={DebugScreen}
+        options={{ headerTitle: 'Debug' }}
+      />
+    </DebugTabStack.Navigator>
+  );
+}

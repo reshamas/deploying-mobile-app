@@ -6,6 +6,7 @@ export type RootStackParamList = {
 export type BottomTabParamList = {
   Home: undefined;
   About: undefined;
+  Debug: undefined;
 };
 
 export type HomeParamList = {
@@ -14,4 +15,8 @@ export type HomeParamList = {
 
 export type AboutParamList = {
   AboutScreen: undefined;
+};
+
+export type DebugParamList = {
+  DebugScreen: undefined;
 };

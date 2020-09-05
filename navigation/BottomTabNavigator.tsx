@@ -38,7 +38,7 @@ export default function BottomTabNavigator() {
         name="Debug"
         component={TabDebugNavigator}
         options={{
-          tabBarIcon: ({ color }) => <TabBarIcon color={color} name={Platform.OS === 'ios' ? 'ios-debug' : 'md-debug'} />,
+          tabBarIcon: ({ color }) => <TabBarIcon color={color} name={Platform.OS === 'ios' ? 'ios-options' : 'md-options'} />,
         }}
       />
     </BottomTab.Navigator>

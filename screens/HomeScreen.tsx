@@ -125,7 +125,7 @@ export default class HomeScreen extends React.Component<{},State> {
                     <Text>loading time: {this.state.timing?.imageLoadingTime}</Text>
                     <Text>preprocessing time: {this.state.timing?.imagePreprocessing}</Text>
                     <Text>prediction time: {this.state.timing?.imagePrediction}</Text>
-
+                    <Text>decode time: {this.state.timing?.imageDecodePrediction}</Text>
                    
                   </View>
 

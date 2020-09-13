@@ -1,9 +1,9 @@
 import * as tf from '@tensorflow/tfjs';
 import * as FileSystem from 'expo-file-system'
 import { fetch ,asyncStorageIO,bundleResourceIO,decodeJpeg} from '@tensorflow/tfjs-react-native'
-import * as jpeg from 'jpeg-js'
 import {Image} from 'react-native';
 import * as ImageManipulator from 'expo-image-manipulator';
+import {AppConfig} from "../config"
 
 export interface ModelPrediction {
   className:string;
@@ -24,29 +24,30 @@ export interface IModelPredictionResponse {
   error?:string | null
 }
 
-const imageToTensor = (imgB64:string)=> {
-  const imgBuffer = tf.util.encodeString(imgB64, 'base64').buffer;
-  const rawImageData = new Uint8Array(imgBuffer)  
- 
+const imageToTensor = (rawImageData:Uint8Array)=> {
   return decodeJpeg(rawImageData);
 }
 
 
 const  fetchImage = async (image:ImageManipulator.ImageResult) => {
+  let imgB64:string;
+  if(image.base64){
+    imgB64=image.base64
+  }else{ 
+    const imageAssetPath = Image.resolveAssetSource(image)
+    console.log(imageAssetPath.uri);
   
-  if (image.base64){
-    return image.base64;
+    imgB64 = await FileSystem.readAsStringAsync(imageAssetPath.uri, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
   }
-  const imageAssetPath = Image.resolveAssetSource(image)
-  console.log(imageAssetPath.uri);
+ 
+  const imgBuffer = tf.util.encodeString(imgB64, 'base64').buffer;
+  const rawImageData = new Uint8Array(imgBuffer)  
 
-  const imgB64:string = await FileSystem.readAsStringAsync(imageAssetPath.uri, {
-    encoding: FileSystem.EncodingType.Base64,
-  });
-  
-  return imgB64;
+  return rawImageData;
 }
-const preprocessImage = (imageTensor:tf.Tensor3D,image_size:number) =>{
+const preprocessImage = (imageTensor:tf.Tensor3D,imageSize:number) =>{
     const preProcessedImage = tf.tidy(() => {
         const b = tf.scalar(127.5);
 
@@ -60,7 +61,7 @@ const preprocessImage = (imageTensor:tf.Tensor3D,image_size:number) =>{
         const alignCorners = true;
 
         const resized =
-          normalized.resizeBilinear([image_size, image_size], alignCorners)
+          normalized.resizeBilinear([imageSize, imageSize], alignCorners)
         const batchedImage = resized.expandDims();
         return batchedImage;
       })
@@ -87,17 +88,17 @@ export class ModelService {
 
     private model:tf.GraphModel;
     private model_classes: String[];
-    private IMAGE_SIZE = 224;
+    private imageSize:number;
     private static instance: ModelService;
 
-    constructor(image_size:number=224,model:tf.GraphModel, model_classes: String[] ){
-        this.IMAGE_SIZE=image_size;
+    constructor(imageSize:number,model:tf.GraphModel, model_classes: String[] ){
+        this.imageSize=imageSize;
         this.model = model;
         this.model_classes=model_classes;
     }
 
 
-    static async create(image_size=224) {
+    static async create(imageSize:number) {
       if (!ModelService.instance){
         await tf.ready(); 
         const modelJSON = require('../assets/model_tfjs/model.json');
@@ -105,9 +106,9 @@ export class ModelService {
         const model_classes = require("../assets/model_tfjs/classes.json")
 
         const model = await tf.loadGraphModel(bundleResourceIO(modelJSON, modelWeights));
-        model.predict(tf.zeros([1, image_size, image_size, 3]));
+        model.predict(tf.zeros([1, imageSize, imageSize, 3]));
         
-        ModelService.instance = new ModelService(image_size,model,model_classes);
+        ModelService.instance = new ModelService(imageSize,model,model_classes);
 
       }
 
@@ -119,24 +120,22 @@ export class ModelService {
       const predictionResponse = {timing:null,predictions:null,error:null} as IModelPredictionResponse;
       try {
           console.log(`Classifying Image: Start `)
+          
+          let imgBuffer:Uint8Array = await fetchImage(image); 
           const timeStart = new Date().getTime()
-          
-          let imgB64:string = await fetchImage(image); 
-
-          
           
           tf.tidy(()=>{
             console.log(`Fetching Image: Start `)
           
-            const imageTensor:tf.Tensor3D = imageToTensor(imgB64);
-            imgB64 =''; 
+            const imageTensor:tf.Tensor3D = imageToTensor(imgBuffer);
+            
             
             console.log(`Fetching Image: Done `)
             const timeLoadDone = new Date().getTime()
       
             console.log("Preprocessing image: Start")
             
-            const preProcessedImage = preprocessImage(imageTensor,this.IMAGE_SIZE);
+            const preProcessedImage = preprocessImage(imageTensor,this.imageSize);
       
             console.log("Preprocessing image: Done")
             const timePrepocessDone = new Date().getTime()
@@ -150,7 +149,7 @@ export class ModelService {
             console.log("Post Processing: Start")
       
             // post processing
-            predictionResponse.predictions  = decodePredictions(predictionsTensor,this.model_classes,3);
+            predictionResponse.predictions  = decodePredictions(predictionsTensor,this.model_classes,AppConfig.topK);
             
             
             //tf.dispose(imageTensor);

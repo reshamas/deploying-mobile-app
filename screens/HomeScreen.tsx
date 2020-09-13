@@ -51,7 +51,7 @@ export default class HomeScreen extends React.Component<{},State> {
 
   async componentDidMount() {
     this.setState({ loading: true });
-    this.modelService = await ModelService.create();
+    this.modelService = await ModelService.create(AppConfig.imageSize);
     this.setState({ isTfReady: true,isModelReady: true,loading: false  });
   }
 
@@ -110,7 +110,7 @@ export default class HomeScreen extends React.Component<{},State> {
                                 <ListItem.Content >
 
                                   <ListItem.Title>{item.className}</ListItem.Title>
-                                  <ListItem.Subtitle>{`prob: ${item.probability.toFixed(3)}`}</ListItem.Subtitle>
+                                  <ListItem.Subtitle>{`prob: ${item.probability.toFixed(AppConfig.precision)}`}</ListItem.Subtitle>
                                 </ListItem.Content>
 
                               </ListItem>
@@ -204,7 +204,7 @@ export default class HomeScreen extends React.Component<{},State> {
   _classifyImage = async (imageUri:string) => {
     try {
       const res:ImageManipulator.ImageResult = await ImageManipulator.manipulateAsync(imageUri,
-        [{ resize: { width:224, height:224 }}],
+        [{ resize: { width:AppConfig.imageSize, height:AppConfig.imageSize }}],
         { compress: 1, format: ImageManipulator.SaveFormat.JPEG,base64:true }
         );
       

@@ -17,6 +17,10 @@ This is a Manning [liveProject](https://liveproject.manning.com).
 Notes:  
 - Time to inference will vary by user as it is dependent on the hardware.  
     `
+    ,imageSize :224
+    ,topK:3 
+    ,precision:2
+
 };
 
 

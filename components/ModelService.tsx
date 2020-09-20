@@ -47,25 +47,16 @@ const  fetchImage = async (image:ImageManipulator.ImageResult) => {
 
   return rawImageData;
 }
-const preprocessImage = (imageTensor:tf.Tensor3D,imageSize:number) =>{
-    const preProcessedImage = tf.tidy(() => {
-        const b = tf.scalar(127.5);
+const preprocessImage = (img:tf.Tensor3D,imageSize:number) =>{
+      // https://github.com/keras-team/keras-applications/blob/master/keras_applications/imagenet_utils.py#L43
 
-        let res = tf.div(imageTensor,b);
-        
-        res = tf.sub( res, 1) ;
+      let imageTensor = img.resizeBilinear([imageSize, imageSize]).toFloat();
 
-        // https://github.com/keras-team/keras-applications/blob/master/keras_applications/imagenet_utils.py#L43
-
-        let normalized = res;            
-        const alignCorners = true;
-
-        const resized =
-          normalized.resizeBilinear([imageSize, imageSize], alignCorners)
-        const batchedImage = resized.expandDims();
-        return batchedImage;
-      })
-      return preProcessedImage;          
+      const offset = tf.scalar(127.5);
+      const normalized = imageTensor.sub(offset).div(offset);
+      const preProcessedImage = normalized.reshape([1, imageSize, imageSize, 3]);
+      return preProcessedImage;
+      
 }
 
 const decodePredictions = (predictions:tf.Tensor, classes:String[],topK=3) =>{

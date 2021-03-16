@@ -14,4 +14,4 @@ web-build/
 .vscode
 assets/model_tfjs/*
 
-model_tfjs
+!assets/model_tfjs/.gitkeep

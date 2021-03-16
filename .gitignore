@@ -13,3 +13,5 @@ web-build/
 .DS_Store
 .vscode
 assets/model_tfjs/*
+
+model_tfjs

@@ -100,7 +100,6 @@ export class ModelService {
         model.predict(tf.zeros([1, imageSize, imageSize, 3]));
         
         ModelService.instance = new ModelService(imageSize,model,model_classes);
-
       }
 
       return ModelService.instance;
@@ -114,7 +113,7 @@ export class ModelService {
           
           let imgBuffer:Uint8Array = await fetchImage(image); 
           const timeStart = new Date().getTime()
-          
+          console.log(`Backend: ${tf.getBackend()} `)
           tf.tidy(()=>{
             console.log(`Fetching Image: Start `)
           
